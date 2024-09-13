@@ -1,386 +1,356 @@
-import React from "react";
-import { styled, keyframes } from "@stitches/react";
-import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
-import { CaretDownIcon } from "@radix-ui/react-icons";
-import { violet, mauve, indigo, purple, blackA } from "@radix-ui/colors";
+import React, { useState, useRef } from "react";
 import "./App.css";
-import { Text } from "@radix-ui/themes";
+import { Box, Button, Image, Input, Portal, Text } from "@chakra-ui/react";
+import { assign, setup } from "xstate";
+import { useMachine } from "@xstate/react";
+interface App {
+  name: string;
+  count: number;
+  icon: string;
+}
 
-const ANIMATION_DURATION = 250;
+interface Person {
+  name: string;
+  email: string;
+  avatar: string;
+}
 
-const enterFromRight = keyframes({
-  from: { transform: "translateX(200px)", opacity: 0, filter: "blur(10px)" },
-  to: { transform: "translateX(0)", opacity: 1, filter: "blur(0px)" },
-});
+const apps: App[] = [
+  { name: "All", count: 24, icon: "📊" },
+  { name: "Google Drive", count: 2, icon: "📁" },
+  { name: "Azure", count: 2, icon: "☁️" },
+  { name: "Slack", count: 6, icon: "💬" },
+  { name: "Confluence", count: 2, icon: "📝" },
+  { name: "Notion", count: 1, icon: "📓" },
+  { name: "Github", count: 7, icon: "🐙" },
+  { name: "Dropbox", count: 4, icon: "📦" },
+  { name: "Sharepoint", count: 0, icon: "🔗" },
+];
 
-const enterFromLeft = keyframes({
-  from: { transform: "translateX(-200px)", opacity: 0, filter: "blur(10px)" },
-  to: { transform: "translateX(0)", opacity: 1, filter: "blur(0px)" },
-});
-
-const exitToRight = keyframes({
-  from: { transform: "translateX(0)", opacity: 1, filter: "blur(0px)" },
-  to: { transform: "translateX(200px)", opacity: 0, filter: "blur(10px)" },
-});
-
-const exitToLeft = keyframes({
-  from: { transform: "translateX(0)", opacity: 1, filter: "blur(0px)" },
-  to: { transform: "translateX(-200px)", opacity: 0, filter: "blur(10px)" },
-});
-
-const scaleIn = keyframes({
-  from: { transform: "rotateX(-30deg) scale(0.9)", opacity: 0 },
-  to: { transform: "rotateX(0deg) scale(1)", opacity: 1 },
-});
-
-const scaleOut = keyframes({
-  from: { transform: "rotateX(0deg) scale(1)", opacity: 1 },
-  to: { transform: "rotateX(-10deg) scale(0.95)", opacity: 0 },
-});
-
-const fadeIn = keyframes({
-  from: { opacity: 0 },
-  to: { opacity: 1 },
-});
-
-const fadeOut = keyframes({
-  from: { opacity: 1 },
-  to: { opacity: 0 },
-});
-
-const StyledMenu = styled(NavigationMenuPrimitive.Root, {
-  position: "relative",
-  display: "flex",
-  justifyContent: "center",
-  width: "100vw",
-  zIndex: 1,
-});
-
-const StyledList = styled(NavigationMenuPrimitive.List, {
-  all: "unset",
-  display: "flex",
-  justifyContent: "center",
-  backgroundColor: "white",
-  padding: 4,
-  borderRadius: 6,
-  listStyle: "none",
-  boxShadow: `0 2px 10px ${blackA.blackA7}`,
-});
-
-const itemStyles = {
-  padding: "8px 12px",
-  outline: "none",
-  userSelect: "none",
-  fontWeight: 500,
-  lineHeight: 1,
-  borderRadius: 4,
-  fontSize: 15,
-  color: violet.violet11,
-  "&:focus": { position: "relative", boxShadow: `0 0 0 2px ${violet.violet7}` },
-  "&:hover": { backgroundColor: violet.violet3 },
-};
-
-const StyledTrigger = styled(NavigationMenuPrimitive.Trigger, {
-  all: "unset",
-  ...itemStyles,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 2,
-});
-
-const StyledCaret = styled(CaretDownIcon, {
-  position: "relative",
-  color: violet.violet10,
-  top: 1,
-  "[data-state=open] &": { transform: "rotate(-180deg)" },
-  "@media (prefers-reduced-motion: no-preference)": {
-    transition: `transform ${ANIMATION_DURATION}ms ease`,
+const people: Person[] = [
+  {
+    name: "Margie Ernser",
+    email: "margie@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
   },
-});
-
-const StyledTriggerWithCaret = React.forwardRef(
-  ({ children, ...props }, forwardedRef) => (
-    <StyledTrigger {...props} ref={forwardedRef}>
-      {children}
-      <StyledCaret aria-hidden />
-    </StyledTrigger>
-  )
-);
-
-const StyledLink = styled(NavigationMenuPrimitive.Link, {
-  ...itemStyles,
-  display: "block",
-  textDecoration: "none",
-  fontSize: 15,
-  lineHeight: 1,
-});
-
-const StyledContent = styled(NavigationMenuPrimitive.Content, {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  width: "100%",
-  minWidth: "300px",
-  minHeight: "200px",
-  "@media only screen and (min-width: 600px)": { width: "auto" },
-  "@media (prefers-reduced-motion: no-preference)": {
-    animationDuration: `${ANIMATION_DURATION}ms`,
-    animationTimingFunction: "ease",
-    '&[data-motion="from-start"]': { animationName: enterFromLeft },
-    '&[data-motion="from-end"]': { animationName: enterFromRight },
-    '&[data-motion="to-start"]': { animationName: exitToLeft },
-    '&[data-motion="to-end"]': { animationName: exitToRight },
+  {
+    name: "Richard Tillman",
+    email: "richard@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
   },
-});
+  {
+    name: "Velma McCullough",
+    email: "velma.mccullough@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
+  },
+  {
+    name: "Pat Bahringer",
+    email: "pat.bahringer@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
+  },
+  {
+    name: "Delia Kling",
+    email: "delia.kling@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
+  },
+  {
+    name: "Rene Abshire",
+    email: "rene.abshire@acme.com",
+    avatar: "/placeholder.svg?height=32&width=32",
+  },
+];
 
-const StyledIndicator = styled(NavigationMenuPrimitive.Indicator, {
-  display: "flex",
-  alignItems: "flex-end",
-  justifyContent: "center",
-  height: 10,
-  top: "100%",
-  overflow: "hidden",
-  zIndex: 1,
+const toNumericDuration = (ms: string) => +ms.replace("ms", "");
 
-  "@media (prefers-reduced-motion: no-preference)": {
-    transition: `width, transform ${ANIMATION_DURATION}ms ease`,
-    '&[data-state="visible"]': {
-      animation: `${fadeIn} ${ANIMATION_DURATION}ms ease`,
+const animationAndChildSwapMachine = setup({
+  types: {
+    context: {} as {
+      key: string | null;
+      nextKey: string | null;
     },
-    '&[data-state="hidden"]': {
-      animation: `${fadeOut} ${ANIMATION_DURATION}ms ease`,
-    },
+    events: {} as
+      | { type: "open dropdown"; key: string }
+      | { type: "close dropdown" },
   },
-});
-
-const StyledArrow = styled("div", {
-  position: "relative",
-  top: "70%",
-  backgroundColor: "white",
-  width: 10,
-  height: 10,
-  transform: "rotate(45deg)",
-  borderTopLeftRadius: 2,
-});
-
-const StyledIndicatorWithArrow = React.forwardRef((props, forwardedRef) => (
-  <StyledIndicator {...props} ref={forwardedRef}>
-    <StyledArrow />
-  </StyledIndicator>
-));
-
-const StyledViewport = styled(NavigationMenuPrimitive.Viewport, {
-  position: "relative",
-  transformOrigin: "top center",
-  marginTop: 10,
-  width: "100%",
-  backgroundColor: "white",
-  borderRadius: 6,
-  overflow: "hidden",
-  boxShadow:
-    "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
-  height: "var(--radix-navigation-menu-viewport-height)",
-
-  "@media only screen and (min-width: 600px)": {
-    width: "var(--radix-navigation-menu-viewport-width)",
+  actions: {
+    setKey: assign(({ event }) => {
+      if (event.type === "open dropdown") {
+        return {
+          key: event.key,
+        };
+      }
+      return {};
+    }),
+    clearKey: assign({
+      key: null,
+      nextKey: null,
+    }),
+    setNextKey: assign(({ event }) => {
+      if (event.type === "open dropdown") {
+        return {
+          nextKey: event.key,
+        };
+      }
+      return {};
+    }),
+    addAnimationClassName: () => {},
+    clearAnimationClassName: () => {},
+    addFirstTimeAnimationClassName: () => {},
+    clearFirstTimeAnimationClassName: () => {},
+    changeKey: assign({
+      key: ({ context }) => context.nextKey,
+      nextKey: null,
+    }),
   },
-  "@media (prefers-reduced-motion: no-preference)": {
-    transition: `width, height, ${ANIMATION_DURATION}ms ease`,
-    '&[data-state="open"]': {
-      animation: `${scaleIn} ${ANIMATION_DURATION}ms ease`,
-    },
-    '&[data-state="closed"]': {
-      animation: `${scaleOut} ${ANIMATION_DURATION}ms ease`,
-    },
+  delays: {
+    animationDuration: 0,
+    animationDurationHalf: 0,
+    firstTimeAnimationDuration: 0,
   },
-});
-
-// Exports
-const NavigationMenu = StyledMenu;
-const NavigationMenuList = StyledList;
-const NavigationMenuItem = NavigationMenuPrimitive.Item;
-const NavigationMenuTrigger = StyledTriggerWithCaret;
-const NavigationMenuLink = StyledLink;
-const NavigationMenuContent = StyledContent;
-const NavigationMenuViewport = StyledViewport;
-const NavigationMenuIndicator = StyledIndicatorWithArrow;
-
-// Your app...
-const ContentList = styled("ul", {
-  display: "grid",
-  padding: 22,
-  margin: 0,
-  columnGap: 10,
-  listStyle: "none",
-
-  variants: {
-    layout: {
-      one: {
-        "@media only screen and (min-width: 600px)": {
-          width: 500,
-          gridTemplateColumns: ".75fr 1fr",
+}).createMachine({
+  id: "root",
+  initial: "dropdown closed",
+  context: {
+    key: null,
+    nextKey: null,
+  },
+  states: {
+    "dropdown closed": {
+      on: {
+        "open dropdown": {
+          target: "opening first time",
+          actions: ["setKey"],
         },
       },
-      two: {
-        "@media only screen and (min-width: 600px)": {
-          width: 600,
-          gridAutoFlow: "column",
-          gridTemplateRows: "repeat(3, 1fr)",
+    },
+    "opening first time": {
+      entry: ["addFirstTimeAnimationClassName"],
+      after: {
+        firstTimeAnimationDuration: {
+          target: "dropdown opened",
+          actions: "clearFirstTimeAnimationClassName",
+        },
+      },
+    },
+    "dropdown opened": {
+      initial: "idle",
+      states: {
+        idle: {
+          on: {
+            "close dropdown": {
+              target: "#root.dropdown closed",
+              actions: "clearKey",
+            },
+            "open dropdown": {
+              target: "animating",
+              actions: ["addAnimationClassName", "setNextKey"],
+            },
+          },
+        },
+        animating: {
+          after: {
+            animationDurationHalf: {
+              actions: "changeKey",
+            },
+            animationDuration: {
+              target: "idle",
+              actions: "clearAnimationClassName",
+            },
+          },
         },
       },
     },
   },
 });
 
-const ListItem = styled("li", {});
-
-const LinkTitle = styled("div", {
-  fontWeight: 500,
-  lineHeight: 1.2,
-  marginBottom: 5,
-  color: violet.violet12,
-});
-
-const LinkText = styled("p", {
-  all: "unset",
-  color: mauve.mauve11,
-  lineHeight: 1.4,
-  fontWeight: "initial",
-});
-
-const ContentListItem = React.forwardRef(
-  ({ children, title, ...props }, forwardedRef) => (
-    <ListItem>
-      <NavigationMenuLink
-        {...props}
-        ref={forwardedRef}
-        css={{
-          padding: 12,
-          borderRadius: 6,
-          "&:hover": { backgroundColor: mauve.mauve3 },
-        }}
-      >
-        <LinkTitle>{title}</LinkTitle>
-        <LinkText>{children}</LinkText>
-      </NavigationMenuLink>
-    </ListItem>
-  )
-);
-
-const ContentListItemCallout = React.forwardRef(
-  ({ children, ...props }, forwardedRef) => (
-    <ListItem css={{ gridRow: "span 3" }}>
-      <NavigationMenuLink
-        {...props}
-        href="/"
-        ref={forwardedRef}
-        css={{
-          display: "flex",
-          justifyContent: "flex-end",
-          flexDirection: "column",
-          width: "100%",
-          height: "100%",
-          background: `linear-gradient(135deg, ${purple.purple9} 0%, ${indigo.indigo9} 100%);`,
-          borderRadius: 6,
-          padding: 25,
-        }}
-      >
-        <svg
-          aria-hidden
-          width="38"
-          height="38"
-          viewBox="0 0 25 25"
-          fill="white"
-        >
-          <path d="M12 25C7.58173 25 4 21.4183 4 17C4 12.5817 7.58173 9 12 9V25Z"></path>
-          <path d="M12 0H4V8H12V0Z"></path>
-          <path d="M17 8C19.2091 8 21 6.20914 21 4C21 1.79086 19.2091 0 17 0C14.7909 0 13 1.79086 13 4C13 6.20914 14.7909 8 17 8Z"></path>
-        </svg>
-        <LinkTitle
-          css={{
-            fontSize: 18,
-            color: "white",
-            marginTop: 16,
-            marginBottom: 7,
-          }}
-        >
-          Radix Primitives
-        </LinkTitle>
-        <LinkText
-          css={{
-            fontSize: 14,
-            color: mauve.mauve4,
-            lineHeight: 1.3,
-          }}
-        >
-          Unstyled, accessible components for React.
-        </LinkText>
-      </NavigationMenuLink>
-    </ListItem>
-  )
-);
-
-const ViewportPosition = styled("div", {
-  position: "absolute",
-  display: "flex",
-  justifyContent: "center",
-  width: "100%",
-  top: "100%",
-  left: 0,
-  perspective: "2000px",
-});
-
-export const NavigationMenuDemo = () => {
+function AppsDropdown() {
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger
-            onPointerMove={(event) => event.preventDefault()}
-            onPointerLeave={(event) => event.preventDefault()}
+    <Box p="4">
+      <Box as="h2" fontSize="lg" fontWeight="semibold" mb={4}>
+        Apps
+      </Box>
+      <Box as="ul">
+        {apps.map((app, index) => (
+          <Box
+            key={index}
+            as="li"
+            display="flex"
+            justifyContent="space-between"
+            py={2}
           >
-            Apps
-          </NavigationMenuTrigger>
-          <NavigationMenuContent
-            onPointerEnter={(event) => event.preventDefault()}
-            onPointerLeave={(event) => event.preventDefault()}
-            css={{
-              minWidth: "300px",
-              minHeight: "200px",
-            }}
-          >
-            <Text>Apps</Text>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
+            <span>
+              {app.icon} {app.name}
+            </span>
+            <span className="text-gray-500">{app.count}</span>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
-        <NavigationMenuItem>
-          <NavigationMenuTrigger
-            onPointerMove={(event) => event.preventDefault()}
-            onPointerLeave={(event) => event.preventDefault()}
+function PeopleDropdown({ people }: { people: Person[] }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  return (
+    <Box p={4}>
+      <Box as="h2" fontSize="lg" fontWeight="semibold" mb={4}>
+        People
+      </Box>
+      <Input
+        type="search"
+        placeholder="Search for people or teams..."
+        className="w-full p-2 mb-4 border rounded-md"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <Box as="ul">
+        {people.map((person, index) => (
+          <Box
+            as="li"
+            key={index}
+            className="flex items-center py-2"
+            display="flex"
+            flexDirection="row"
+            alignItems="center"
           >
-            People
-          </NavigationMenuTrigger>
-          <NavigationMenuContent
-            onPointerEnter={(event) => event.preventDefault()}
-            onPointerLeave={(event) => event.preventDefault()}
-            css={{
-              minWidth: "500px",
-              minHeight: "400px",
-            }}
-          >
-            <Text>People</Text>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
+            <Image
+              src={person.avatar}
+              alt={person.name}
+              width="32px"
+              height="32px"
+              borderRadius="full"
+              marginRight="4px"
+            />
+            <Box>
+              <Text>{person.name}</Text>
+              <Text isTruncated>{person.email}</Text>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
-        <NavigationMenuIndicator />
-      </NavigationMenuList>
+const DropdownUI: React.FC = () => {
+  const [activeDropdown, setActiveDropdown] = useState<{
+    key: "apps" | "people";
+    triggerPosition: DOMRect;
+  } | null>(null);
+  const dropdownContainerRef = useRef<HTMLDivElement>(null!);
+  const dropdownContentRef = useRef<HTMLDivElement>(null!);
 
-      <ViewportPosition>
-        <NavigationMenuViewport />
-      </ViewportPosition>
-    </NavigationMenu>
+  const animationDuration = toNumericDuration(
+    getComputedStyle(document.documentElement).getPropertyValue(
+      "--animation-duration"
+    )
+  );
+
+  const [state, send] = useMachine(
+    animationAndChildSwapMachine.provide({
+      actions: {
+        addAnimationClassName: () => {
+          dropdownContainerRef.current.classList.add("animate-blur");
+        },
+        clearAnimationClassName: () => {
+          dropdownContainerRef.current.classList.remove("animate-blur");
+        },
+        addFirstTimeAnimationClassName: () => {
+          dropdownContainerRef.current.classList.add("animate-first-time");
+        },
+        clearFirstTimeAnimationClassName: () => {
+          dropdownContainerRef.current.classList.remove("animate-first-time");
+        },
+      },
+      delays: {
+        animationDuration,
+        animationDurationHalf: animationDuration / 3,
+        firstTimeAnimationDuration: 200,
+      },
+    })
+  );
+
+  return (
+    <Box display="flex" flexDirection="row" gap="20">
+      <Button
+        variant="outline"
+        bg="gray.200"
+        borderRadius="md"
+        px="4"
+        py="2"
+        onClick={(e) => {
+          setActiveDropdown({
+            key: "apps",
+            triggerPosition: e.currentTarget.getBoundingClientRect(),
+          });
+          send({ type: "open dropdown", key: "apps" });
+        }}
+      >
+        📊 Apps
+      </Button>
+      <Button
+        variant="outline"
+        bg="gray.200"
+        borderRadius="md"
+        px="4"
+        py="2"
+        onClick={(e) => {
+          setActiveDropdown({
+            key: "people",
+            triggerPosition: e.currentTarget.getBoundingClientRect(),
+          });
+          send({ type: "open dropdown", key: "people" });
+        }}
+      >
+        👥 People
+      </Button>
+      <Portal>
+        <Box
+          ref={dropdownContainerRef}
+          position="absolute"
+          bg="white"
+          rounded="md"
+          shadow="lg"
+          overflow="hidden"
+          hidden={!state.context.key}
+          style={{
+            width: activeDropdown?.key === "apps" ? "300px" : "400px",
+            height: activeDropdown?.key === "apps" ? "400px" : "500px",
+            top: activeDropdown
+              ? activeDropdown.triggerPosition.top +
+                activeDropdown.triggerPosition.height
+              : 0,
+            left: activeDropdown ? activeDropdown.triggerPosition.left : 0,
+            transitionDuration: "var(--animation-duration)",
+          }}
+        >
+          <Box ref={dropdownContentRef} hidden={!state.context.key}>
+            {state.context.key ? (
+              state.context.key === "apps" ? (
+                <AppsDropdown />
+              ) : state.context.key === "people" ? (
+                <PeopleDropdown people={people} />
+              ) : null
+            ) : null}
+          </Box>
+        </Box>
+      </Portal>
+    </Box>
   );
 };
 
-export default NavigationMenuDemo;
+export default function Component() {
+  return (
+    <Box
+      height="100vh"
+      bg="gray.100"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="start"
+      pt="20"
+    >
+      <DropdownUI />
+    </Box>
+  );
+}
