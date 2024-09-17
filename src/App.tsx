@@ -1,12 +1,28 @@
-import React, { useState, useRef } from "react";
-import "./App.css";
-import { Box, Button, Image, Input, Portal, Text } from "@chakra-ui/react";
-import { assign, setup } from "xstate";
-import { useMachine } from "@xstate/react";
+import React, { useState } from "react";
+import { Box, Divider, Image, Input, Text } from "@chakra-ui/react";
+import {
+  AzureIcon,
+  CalendarIcon,
+  CaretDownIcon,
+  ConfluenceIcon,
+  DropboxIcon,
+  FolderIcon,
+  GithubIcon,
+  GoogleDriveIcon,
+  MoreIcon,
+  NotionIcon,
+  PoepleIcon,
+  SearchIcon,
+  SharepointIcon,
+  SlackIcon,
+} from "./Icons";
+import { Menu, MenuItem } from "./Menu";
+import { FilterGroup } from "./FilterGroup";
+
 interface App {
   name: string;
   count: number;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 interface Person {
@@ -15,216 +31,128 @@ interface Person {
   avatar: string;
 }
 
+interface ModifiedOption {
+  label: string;
+  value: string;
+}
+
+// Mock data
 const apps: App[] = [
-  { name: "All", count: 24, icon: "📊" },
-  { name: "Google Drive", count: 2, icon: "📁" },
-  { name: "Azure", count: 2, icon: "☁️" },
-  { name: "Slack", count: 6, icon: "💬" },
-  { name: "Confluence", count: 2, icon: "📝" },
-  { name: "Notion", count: 1, icon: "📓" },
-  { name: "Github", count: 7, icon: "🐙" },
-  { name: "Dropbox", count: 4, icon: "📦" },
-  { name: "Sharepoint", count: 0, icon: "🔗" },
+  { name: "All", count: 24, icon: null },
+  { name: "Google Drive", count: 2, icon: <GoogleDriveIcon /> },
+  { name: "Azure", count: 2, icon: <AzureIcon /> },
+  { name: "Slack", count: 6, icon: <SlackIcon /> },
+  { name: "Confluence", count: 2, icon: <ConfluenceIcon /> },
+  { name: "Notion", count: 1, icon: <NotionIcon /> },
+  { name: "Github", count: 7, icon: <GithubIcon /> },
+  { name: "Dropbox", count: 4, icon: <DropboxIcon /> },
+  { name: "Sharepoint", count: 0, icon: <SharepointIcon /> },
 ];
 
 const people: Person[] = [
   {
     name: "Margie Ernser",
     email: "margie@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/margie.png",
   },
   {
     name: "Richard Tillman",
     email: "richard@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/richard.png",
   },
   {
     name: "Velma McCullough",
     email: "velma.mccullough@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/velma.png",
   },
   {
     name: "Pat Bahringer",
     email: "pat.bahringer@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/pat.png",
   },
   {
     name: "Delia Kling",
     email: "delia.kling@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/delia.png",
   },
   {
     name: "Rene Abshire",
     email: "rene.abshire@acme.com",
-    avatar: "/placeholder.svg?height=32&width=32",
+    avatar: "/mock-avatars/rene.png",
   },
 ];
 
-const toNumericDuration = (ms: string) => +ms.replace("ms", "");
+const modifiedOptions: ModifiedOption[] = [
+  { label: "Any time", value: "anyTime" },
+  { label: "Today", value: "today" },
+  { label: "Last 7 days", value: "last7Days" },
+  { label: "Last 30 days", value: "last30Days" },
+  { label: "This year", value: "thisYear" },
+];
 
-const animationAndChildSwapMachine = setup({
-  types: {
-    context: {} as {
-      key: string | null;
-      nextKey: string | null;
-    },
-    events: {} as
-      | { type: "open dropdown"; key: string }
-      | { type: "close dropdown" },
-  },
-  actions: {
-    setKey: assign(({ event }) => {
-      if (event.type === "open dropdown") {
-        return {
-          key: event.key,
-        };
-      }
-      return {};
-    }),
-    clearKey: assign({
-      key: null,
-      nextKey: null,
-    }),
-    setNextKey: assign(({ event }) => {
-      if (event.type === "open dropdown") {
-        return {
-          nextKey: event.key,
-        };
-      }
-      return {};
-    }),
-    addAnimationClassName: () => {},
-    clearAnimationClassName: () => {},
-    addFirstTimeAnimationClassName: () => {},
-    clearFirstTimeAnimationClassName: () => {},
-    changeKey: assign({
-      key: ({ context }) => context.nextKey,
-      nextKey: null,
-    }),
-  },
-  delays: {
-    animationDuration: 0,
-    animationDurationHalf: 0,
-    firstTimeAnimationDuration: 0,
-  },
-}).createMachine({
-  id: "root",
-  initial: "dropdown closed",
-  context: {
-    key: null,
-    nextKey: null,
-  },
-  states: {
-    "dropdown closed": {
-      on: {
-        "open dropdown": {
-          target: "opening first time",
-          actions: ["setKey"],
-        },
-      },
-    },
-    "opening first time": {
-      entry: ["addFirstTimeAnimationClassName"],
-      after: {
-        firstTimeAnimationDuration: {
-          target: "dropdown opened",
-          actions: "clearFirstTimeAnimationClassName",
-        },
-      },
-    },
-    "dropdown opened": {
-      initial: "idle",
-      states: {
-        idle: {
-          on: {
-            "close dropdown": {
-              target: "#root.dropdown closed",
-              actions: "clearKey",
-            },
-            "open dropdown": {
-              target: "animating",
-              actions: ["addAnimationClassName", "setNextKey"],
-            },
-          },
-        },
-        animating: {
-          after: {
-            animationDurationHalf: {
-              actions: "changeKey",
-            },
-            animationDuration: {
-              target: "idle",
-              actions: "clearAnimationClassName",
-            },
-          },
-        },
-      },
-    },
-  },
-});
-
-function AppsDropdown() {
+function AppsDropdownContent({ apps }: { apps: App[] }) {
   return (
-    <Box p="4">
-      <Box as="h2" fontSize="lg" fontWeight="semibold" mb={4}>
-        Apps
-      </Box>
-      <Box as="ul">
-        {apps.map((app, index) => (
-          <Box
-            key={index}
-            as="li"
-            display="flex"
-            justifyContent="space-between"
-            py={2}
-          >
-            <span>
-              {app.icon} {app.name}
-            </span>
-            <span className="text-gray-500">{app.count}</span>
-          </Box>
-        ))}
-      </Box>
-    </Box>
+    <Menu>
+      {apps.map((app, index) => (
+        <MenuItem key={index}>
+          {app.icon}
+          <Text fontWeight="500">{app.name}</Text>
+          <Text color="gray.500">{app.count}</Text>
+        </MenuItem>
+      ))}
+    </Menu>
   );
 }
 
-function PeopleDropdown({ people }: { people: Person[] }) {
+function PeopleDropdownContent({ people }: { people: Person[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   return (
-    <Box p={4}>
-      <Box as="h2" fontSize="lg" fontWeight="semibold" mb={4}>
-        People
+    <Box p="4">
+      <Box display="flex" alignItems="center" borderBottom="1px solid #f2f2f2">
+        <SearchIcon />
+        <Input
+          type="text"
+          placeholder="Search for people or teams..."
+          width="full"
+          p="2"
+          mb="4"
+          border="none"
+          borderRadius="0"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          autoFocus
+          m="0"
+          _focus={{
+            outline: "none",
+            boxShadow: "none",
+          }}
+        />
       </Box>
-      <Input
-        type="search"
-        placeholder="Search for people or teams..."
-        className="w-full p-2 mb-4 border rounded-md"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
       <Box as="ul">
         {people.map((person, index) => (
           <Box
             as="li"
             key={index}
-            className="flex items-center py-2"
             display="flex"
             flexDirection="row"
             alignItems="center"
+            py="2"
+            gap="2"
           >
             <Image
               src={person.avatar}
               alt={person.name}
-              width="32px"
-              height="32px"
-              borderRadius="full"
+              width="16px"
+              height="16px"
+              borderRadius="4px"
               marginRight="4px"
             />
-            <Box>
-              <Text>{person.name}</Text>
-              <Text isTruncated>{person.email}</Text>
-            </Box>
+            <Text whiteSpace="nowrap" fontWeight="500">
+              {person.name}
+            </Text>
+            <Text color="#999999" isTruncated>
+              {person.email}
+            </Text>
           </Box>
         ))}
       </Box>
@@ -232,125 +160,62 @@ function PeopleDropdown({ people }: { people: Person[] }) {
   );
 }
 
-const DropdownUI: React.FC = () => {
-  const [activeDropdown, setActiveDropdown] = useState<{
-    key: "apps" | "people";
-    triggerPosition: DOMRect;
-  } | null>(null);
-  const dropdownContainerRef = useRef<HTMLDivElement>(null!);
-  const dropdownContentRef = useRef<HTMLDivElement>(null!);
-
-  const animationDuration = toNumericDuration(
-    getComputedStyle(document.documentElement).getPropertyValue(
-      "--animation-duration"
-    )
-  );
-
-  const [state, send] = useMachine(
-    animationAndChildSwapMachine.provide({
-      actions: {
-        addAnimationClassName: () => {
-          dropdownContainerRef.current.classList.add("animate-blur");
-        },
-        clearAnimationClassName: () => {
-          dropdownContainerRef.current.classList.remove("animate-blur");
-        },
-        addFirstTimeAnimationClassName: () => {
-          dropdownContainerRef.current.classList.add("animate-first-time");
-        },
-        clearFirstTimeAnimationClassName: () => {
-          dropdownContainerRef.current.classList.remove("animate-first-time");
-        },
-      },
-      delays: {
-        animationDuration,
-        animationDurationHalf: animationDuration / 3,
-        firstTimeAnimationDuration: 200,
-      },
-    })
-  );
-
+function ModifiedDropdownContent({ options }: { options: ModifiedOption[] }) {
   return (
-    <Box display="flex" flexDirection="row" gap="20">
-      <Button
-        variant="outline"
-        bg="gray.200"
-        borderRadius="md"
-        px="4"
-        py="2"
-        onClick={(e) => {
-          setActiveDropdown({
-            key: "apps",
-            triggerPosition: e.currentTarget.getBoundingClientRect(),
-          });
-          send({ type: "open dropdown", key: "apps" });
-        }}
-      >
-        📊 Apps
-      </Button>
-      <Button
-        variant="outline"
-        bg="gray.200"
-        borderRadius="md"
-        px="4"
-        py="2"
-        onClick={(e) => {
-          setActiveDropdown({
-            key: "people",
-            triggerPosition: e.currentTarget.getBoundingClientRect(),
-          });
-          send({ type: "open dropdown", key: "people" });
-        }}
-      >
-        👥 People
-      </Button>
-      <Portal>
-        <Box
-          ref={dropdownContainerRef}
-          position="absolute"
-          bg="white"
-          rounded="md"
-          shadow="lg"
-          overflow="hidden"
-          hidden={!state.context.key}
-          style={{
-            width: activeDropdown?.key === "apps" ? "300px" : "400px",
-            height: activeDropdown?.key === "apps" ? "400px" : "500px",
-            top: activeDropdown
-              ? activeDropdown.triggerPosition.top +
-                activeDropdown.triggerPosition.height
-              : 0,
-            left: activeDropdown ? activeDropdown.triggerPosition.left : 0,
-            transitionDuration: "var(--animation-duration)",
-          }}
-        >
-          <Box ref={dropdownContentRef} hidden={!state.context.key}>
-            {state.context.key ? (
-              state.context.key === "apps" ? (
-                <AppsDropdown />
-              ) : state.context.key === "people" ? (
-                <PeopleDropdown people={people} />
-              ) : null
-            ) : null}
-          </Box>
-        </Box>
-      </Portal>
-    </Box>
+    <Menu>
+      {options.map((option, index) => (
+        <MenuItem key={index}>
+          <Text>{option.label}</Text>
+        </MenuItem>
+      ))}
+      <Divider marginBlock="2" />
+      <MenuItem display="flex" justifyContent="space-between">
+        <Text>Custom range</Text>
+        <CaretDownIcon style={{ transform: "rotateZ(-90deg)" }} />
+      </MenuItem>
+    </Menu>
   );
-};
+}
 
-export default function Component() {
+export function App() {
   return (
     <Box
       height="100vh"
-      bg="gray.100"
       display="flex"
       flexDirection="column"
       alignItems="center"
-      justifyContent="start"
+      justifyContent="flex-start"
       pt="20"
     >
-      <DropdownUI />
+      <FilterGroup
+        group={{
+          apps: {
+            label: "Apps",
+            icon: <FolderIcon />,
+            dropdownContent: <AppsDropdownContent apps={apps} />,
+          },
+          people: {
+            label: "People",
+            icon: <PoepleIcon />,
+            dropdownContent: <PeopleDropdownContent people={people} />,
+          },
+          modified: {
+            label: "Modified",
+            icon: <CalendarIcon />,
+            dropdownContent: (
+              <ModifiedDropdownContent options={modifiedOptions} />
+            ),
+          },
+          more: {
+            label: "More",
+            icon: <MoreIcon />,
+            dropdownContent: <div>More</div>,
+            triggerProps: {
+              marginLeft: "20",
+            },
+          },
+        }}
+      />
     </Box>
   );
 }
