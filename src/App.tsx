@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Divider,
@@ -99,12 +99,17 @@ const modifiedOptions: ModifiedOption[] = [
 ];
 
 function AppsDropdownContent({ apps }: { apps: App[] }) {
+  // Randomize the apps list just to demonstrate scrolling
+  const appsList = useMemo(
+    () => apps.concat(apps.slice(1).sort(() => Math.random() - 0.5)),
+    [apps]
+  );
   return (
     <Menu>
-      {apps.map((app, index) => (
+      {appsList.map((app, index) => (
         <MenuItem key={index}>
           {app.icon}
-          <Text fontWeight="500">{app.name}</Text>
+          <Text fontWeight="600">{app.name}</Text>
           <Text color="secondaryText">{app.count}</Text>
         </MenuItem>
       ))}
@@ -114,6 +119,9 @@ function AppsDropdownContent({ apps }: { apps: App[] }) {
 
 function PeopleDropdownContent({ people }: { people: Person[] }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const filteredPeople = people.filter((person) =>
+    person.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   return (
     <Box py="2" px="3">
       <Box
@@ -121,11 +129,16 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
         alignItems="center"
         borderBottom="1px solid var(--chakra-colors-grayHighlight)"
         px="3"
+        mb="2"
       >
         <SearchIcon />
         <Input
           type="text"
           placeholder="Search for people or teams..."
+          _placeholder={{
+            color: "secondaryText",
+          }}
+          color="primaryText"
           width="full"
           p="2"
           mb="4"
@@ -134,7 +147,6 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           autoFocus
-          color="secondaryText"
           m="0"
           _focus={{
             outline: "none",
@@ -143,7 +155,7 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
         />
       </Box>
       <Box as="ul" px="3">
-        {people.map((person, index) => (
+        {filteredPeople.map((person, index) => (
           <Box
             as="li"
             key={index}
@@ -161,7 +173,7 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
               borderRadius="4px"
               marginRight="4px"
             />
-            <Text whiteSpace="nowrap" fontWeight="500">
+            <Text whiteSpace="nowrap" fontWeight="600">
               {person.name}
             </Text>
             <Text color="secondaryText" isTruncated>
@@ -178,12 +190,12 @@ function ModifiedDropdownContent({ options }: { options: ModifiedOption[] }) {
   return (
     <Menu>
       {options.map((option, index) => (
-        <MenuItem key={index}>
+        <MenuItem key={index} fontWeight="500">
           <Text>{option.label}</Text>
         </MenuItem>
       ))}
       <Divider marginBlock="2" />
-      <MenuItem display="flex" justifyContent="space-between">
+      <MenuItem display="flex" justifyContent="space-between" fontWeight="500">
         <Text>Custom range</Text>
         <CaretDownIcon style={{ transform: "rotateZ(-90deg)" }} />
       </MenuItem>

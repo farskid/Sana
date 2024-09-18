@@ -165,6 +165,8 @@ export const FilterGroup = ({
   group: Record<string, GroupItem>;
 }) => {
   const dropdownContainerRef = useRef<HTMLDivElement>(null!);
+  // Remove the unused dropdownContainerShadowRef
+  // const dropdownContainerShadowRef = useRef<HTMLDivElement>(null!);
 
   const animationDuration = cssAnimationDurationAsNumber(
     getComputedStyle(document.documentElement).getPropertyValue(
@@ -246,17 +248,7 @@ export const FilterGroup = ({
   const groupKeys = useMemo(() => Object.keys(group), [group]);
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      gap="4"
-      css={{
-        "&": {
-          "--animation-duration": "250ms",
-          "--first-time-animation-duration": "100ms",
-        },
-      }}
-    >
+    <Box display="flex" flexDirection="column" gap="4">
       <Box display="flex" gap="2">
         <Text fontWeight="bold">Search</Text>
         <Text color="secondaryText">24 results</Text>
@@ -274,7 +266,7 @@ export const FilterGroup = ({
                   ? "grayHighlightDark"
                   : "grayHighlight"
               }
-              borderRadius="20px"
+              borderRadius="var(--chakra-sizes-roundedBorderRadius)"
               px="4"
               py="2"
               textTransform="capitalize"
@@ -289,7 +281,7 @@ export const FilterGroup = ({
               rightIcon={
                 <CaretDownIcon
                   style={{
-                    transition: `transform var(--animation-duration)`,
+                    transition: `transform var(--opening-closing-animation-duration)`,
                     transform:
                       state.hasTag("menuIndicatorOpen") &&
                       state.context.key === key
@@ -311,13 +303,13 @@ export const FilterGroup = ({
             }}
             position="absolute"
             bg="white"
-            borderRadius="20px"
+            borderRadius="var(--chakra-sizes-roundedBorderRadius)"
             border="1px solid var(--chakra-colors-grayHighlight)"
             shadow="lg"
             hidden={!state.context.key}
             width="300px"
-            maxHeight="400px"
             transition="all var(--animation-duration) ease-in-out"
+            overflow="hidden"
             style={{
               top: state.context.triggerPosition
                 ? state.context.triggerPosition.top +
@@ -329,7 +321,26 @@ export const FilterGroup = ({
                 : 0,
             }}
           >
-            {state.context.key && group[state.context.key].dropdownContent}
+            <Box
+              overflow="auto"
+              maxHeight="400px"
+              sx={{
+                "&::-webkit-scrollbar": {
+                  width: "8px",
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(0, 0, 0, 0.05)",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  backgroundColor: "rgba(0, 0, 0, 0.1)",
+                  borderRadius: "8px",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.2)",
+                  },
+                },
+              }}
+            >
+              {state.context.key && group[state.context.key].dropdownContent}
+            </Box>
           </Box>
         </Portal>
       </Box>

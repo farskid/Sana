@@ -1,7 +1,6 @@
 :root {
   --animation-duration: 2500ms;
   --opening-closing-animation-duration: 100ms;
-  --chakra-colors-chakra-body-text: #000;
 }
 
 @keyframes blur {

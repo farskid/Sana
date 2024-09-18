@@ -11,6 +11,9 @@ const theme = extendTheme({
       grayHighlight: "#f2f2f2",
       grayHighlightDark: "#e2e2e2",
     },
+    sizes: {
+      roundedBorderRadius: "20px",
+    },
   },
 });
 
