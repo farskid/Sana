@@ -1,5 +1,5 @@
 :root {
-  --animation-duration: 2500ms;
+  --swap-dropdown-content-animaton-duration: 250ms;
   --opening-closing-animation-duration: 100ms;
 }
 
@@ -17,15 +17,15 @@
   }
 }
 
-.animate-blur {
+.animate-swap-dropdown-content {
   animation: blur ease-in-out;
-  animation-duration: var(--animation-duration);
+  animation-duration: var(--swap-dropdown-content-animaton-duration);
 }
 
 @keyframes opening {
   0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   100% {
     opacity: 1;
@@ -39,16 +39,16 @@
   }
   100% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
 }
 
-.animate-opening {
+.animate-dropdown-opening {
   animation: opening ease-in-out;
   animation-duration: var(--opening-closing-animation-duration);
 }
 
-.animate-closing {
+.animate-dropdown-closing {
   animation: closing ease-in-out;
   animation-duration: var(--opening-closing-animation-duration);
 }

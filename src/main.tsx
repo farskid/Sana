@@ -3,7 +3,7 @@ import { App } from "./App.tsx";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { Global } from "@emotion/react";
 
-const theme = extendTheme({
+export const theme = extendTheme({
   semanticTokens: {
     colors: {
       primaryText: "#000",
@@ -13,7 +13,11 @@ const theme = extendTheme({
     },
     sizes: {
       roundedBorderRadius: "20px",
+      scrollbarSize: "8px",
     },
+  },
+  shadows: {
+    outline: "0 0 0 3px var(--chakra-colors-grayHighlightDark)",
   },
 });
 

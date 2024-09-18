@@ -2,10 +2,11 @@ import { Box, Button, ButtonProps, Portal, Text } from "@chakra-ui/react";
 import { assertEvent, assign, fromCallback, setup } from "xstate";
 import { CaretDownIcon } from "./Icons";
 import { useMachine } from "@xstate/react";
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cssAnimationDurationAsNumber } from "./utils";
 import "./FilterGroup.css";
 
+// The state machine keeps the visible keys and manages animations and content swapping
 const filterGroupMachine = setup({
   types: {
     context: {} as {
@@ -47,16 +48,17 @@ const filterGroupMachine = setup({
         triggerPosition: event.triggerPosition,
       };
     }),
-    addAnimationClassName: () => {},
-    clearAnimationClassName: () => {},
-    addOpeningAnimationClassname: () => {},
-    removeOpeningAnimationClassname: () => {},
+    addSwapBlurAnimationClassName: () => {},
+    removeSwapBlurAnimationClassName: () => {},
+    addOpeningAnimationClassName: () => {},
+    removeOpeningAnimationClassName: () => {},
     addClosingAnimationClassName: () => {},
     removeClosingAnimationClassName: () => {},
     changeKey: assign({
       key: ({ context }) => context.nextKey,
       nextKey: null,
     }),
+    focusTriggerElement: () => {},
   },
   delays: {
     animationDurationHalf: 0,
@@ -80,14 +82,14 @@ const filterGroupMachine = setup({
     },
     "opening first time": {
       tags: ["menuIndicatorOpen"],
-      entry: ["addOpeningAnimationClassname"],
+      entry: ["addOpeningAnimationClassName"],
       invoke: {
         src: "listenToCloseAnimateEnd",
       },
       on: {
         "animation ended": {
           target: "dropdown opened",
-          actions: "removeOpeningAnimationClassname",
+          actions: "removeOpeningAnimationClassName",
         },
       },
     },
@@ -121,11 +123,11 @@ const filterGroupMachine = setup({
           on: {
             "close dropdown": {
               target: "#root.closing",
-              // actions: "focusTriggerElement"
+              actions: "focusTriggerElement",
             },
             "open dropdown": {
               target: "animating",
-              actions: ["addAnimationClassName", "setNextKey"],
+              actions: ["addSwapBlurAnimationClassName", "setNextKey"],
               guard: ({ context, event }) => context.key !== event.key,
               description: "Prevent opening the same dropdown twice",
             },
@@ -138,12 +140,13 @@ const filterGroupMachine = setup({
           on: {
             "animation ended": {
               target: "idle",
-              actions: "clearAnimationClassName",
+              actions: "removeSwapBlurAnimationClassName",
             },
           },
           after: {
+            // Another technique can be to declare another animation in css with half the duration and listen to animationend event on that animation instead of having a fixed delay
             animationDurationHalf: {
-              actions: "changeKey",
+              actions: ["changeKey"],
             },
           },
         },
@@ -159,41 +162,68 @@ interface GroupItem {
   triggerProps?: ButtonProps;
 }
 
+interface ContentDimensions {
+  width: number;
+  height: number;
+}
+
+const DROPDOWN_CONTAINER_WIDTH = 300;
+const DROPDOWN_CONTAINER_MAX_HEIGHT = 400;
+
 export const FilterGroup = ({
   group,
 }: {
   group: Record<string, GroupItem>;
 }) => {
   const dropdownContainerRef = useRef<HTMLDivElement>(null!);
-  // Remove the unused dropdownContainerShadowRef
-  // const dropdownContainerShadowRef = useRef<HTMLDivElement>(null!);
+  const triggerElementRef = useRef<HTMLButtonElement>(null!);
+  const [contentDimensions, setContentDimensions] = useState<
+    Record<string, ContentDimensions>
+  >({});
+  const [nextHiddenKey, setNextHiddenKey] = useState<string | null>(null);
 
+  // In a production environment, we should use the theme's animation duration and keep this consistent within the design system definition
   const animationDuration = cssAnimationDurationAsNumber(
     getComputedStyle(document.documentElement).getPropertyValue(
-      "--animation-duration"
+      "--swap-dropdown-content-animaton-duration"
     )
   );
 
   const [state, send] = useMachine(
     filterGroupMachine.provide({
       actions: {
-        addAnimationClassName: () => {
-          dropdownContainerRef.current.classList.add("animate-blur");
+        addSwapBlurAnimationClassName: () => {
+          dropdownContainerRef.current.classList.add(
+            "animate-swap-dropdown-content"
+          );
         },
-        clearAnimationClassName: () => {
-          dropdownContainerRef.current.classList.remove("animate-blur");
+        removeSwapBlurAnimationClassName: () => {
+          dropdownContainerRef.current.classList.remove(
+            "animate-swap-dropdown-content"
+          );
         },
-        addOpeningAnimationClassname: () => {
-          dropdownContainerRef.current.classList.add("animate-opening");
+        addOpeningAnimationClassName: () => {
+          dropdownContainerRef.current.classList.add(
+            "animate-dropdown-opening"
+          );
         },
-        removeOpeningAnimationClassname: () => {
-          dropdownContainerRef.current.classList.remove("animate-opening");
+        removeOpeningAnimationClassName: () => {
+          dropdownContainerRef.current.classList.remove(
+            "animate-dropdown-opening"
+          );
         },
         addClosingAnimationClassName: () => {
-          dropdownContainerRef.current.classList.add("animate-closing");
+          dropdownContainerRef.current.classList.add(
+            "animate-dropdown-closing"
+          );
         },
         removeClosingAnimationClassName: () => {
-          dropdownContainerRef.current.classList.remove("animate-closing");
+          dropdownContainerRef.current.classList.remove(
+            "animate-dropdown-closing"
+          );
+        },
+        focusTriggerElement: () => {
+          triggerElementRef.current.focus();
         },
       },
       actors: {
@@ -216,8 +246,13 @@ export const FilterGroup = ({
           const ctrl = new AbortController();
           document.addEventListener(
             "click",
-            () => {
-              sendBack({ type: "close dropdown" });
+            (e) => {
+              if (
+                e.target instanceof HTMLElement &&
+                !dropdownContainerRef.current.contains(e.target)
+              ) {
+                sendBack({ type: "close dropdown" });
+              }
             },
             { signal: ctrl.signal }
           );
@@ -247,20 +282,57 @@ export const FilterGroup = ({
 
   const groupKeys = useMemo(() => Object.keys(group), [group]);
 
+  useLayoutEffect(() => {
+    const newDimensions: Record<string, ContentDimensions> = {};
+    groupKeys.forEach((key) => {
+      const element = document.getElementById(`hidden-content-${key}`);
+      if (element) {
+        const { width, height } = element.getBoundingClientRect();
+        newDimensions[key] = { width, height };
+      }
+    });
+    setContentDimensions(newDimensions);
+  }, [group, groupKeys]);
+
+  const dropdownContainerHeight = useMemo(() => {
+    const key = nextHiddenKey ?? state.context.key;
+    if (!key) return 0;
+    return (
+      Math.min(contentDimensions[key]?.height, DROPDOWN_CONTAINER_MAX_HEIGHT) ||
+      0
+    );
+  }, [state.context.key, contentDimensions, nextHiddenKey]);
+
   return (
     <Box display="flex" flexDirection="column" gap="4">
+      {/* Hidden container for pre-rendering content */}
+      <Box
+        height={0}
+        overflow="hidden"
+        position="absolute"
+        visibility="hidden"
+        pointerEvents="none"
+      >
+        {groupKeys.map((key) => (
+          <Box key={key} id={`hidden-content-${key}`}>
+            {group[key].dropdownContent}
+          </Box>
+        ))}
+      </Box>
+
       <Box display="flex" gap="2">
         <Text fontWeight="bold">Search</Text>
         <Text color="secondaryText">24 results</Text>
       </Box>
       <Box display="flex" flexDirection="row" gap="3">
         {groupKeys.map((key) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { label, icon, dropdownContent: _, triggerProps } = group[key];
+          const { label, icon, triggerProps } = group[key];
           return (
             <Button
               {...triggerProps}
               key={key}
+              ref={state.context.key === key ? triggerElementRef : undefined}
+              isDisabled={state.matches({ "dropdown opened": "animating" })}
               bg={
                 state.context.key === key
                   ? "grayHighlightDark"
@@ -276,6 +348,10 @@ export const FilterGroup = ({
                   key,
                   triggerPosition: e.currentTarget.getBoundingClientRect(),
                 });
+                setNextHiddenKey(key);
+              }}
+              _focus={{
+                shadow: "outline",
               }}
               leftIcon={icon}
               rightIcon={
@@ -298,18 +374,16 @@ export const FilterGroup = ({
         <Portal>
           <Box
             ref={dropdownContainerRef}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
             position="absolute"
             bg="white"
             borderRadius="var(--chakra-sizes-roundedBorderRadius)"
             border="1px solid var(--chakra-colors-grayHighlight)"
             shadow="lg"
             hidden={!state.context.key}
-            width="300px"
-            transition="all var(--animation-duration) ease-in-out"
+            transition="all var(--swap-dropdown-content-animaton-duration) ease-in-out"
             overflow="hidden"
+            maxHeight={DROPDOWN_CONTAINER_MAX_HEIGHT}
+            width={DROPDOWN_CONTAINER_WIDTH}
             style={{
               top: state.context.triggerPosition
                 ? state.context.triggerPosition.top +
@@ -319,20 +393,21 @@ export const FilterGroup = ({
               left: state.context.triggerPosition
                 ? state.context.triggerPosition.left
                 : 0,
+              height: dropdownContainerHeight + 4,
             }}
           >
             <Box
               overflow="auto"
-              maxHeight="400px"
+              height="100%"
               sx={{
                 "&::-webkit-scrollbar": {
-                  width: "8px",
-                  borderRadius: "8px",
+                  width: "var(--chakra-sizes-scrollbarSize)",
+                  borderRadius: "var(--chakra-sizes-scrollbarSize)",
                   backgroundColor: "rgba(0, 0, 0, 0.05)",
                 },
                 "&::-webkit-scrollbar-thumb": {
                   backgroundColor: "rgba(0, 0, 0, 0.1)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--chakra-sizes-scrollbarSize)",
                   "&:hover": {
                     backgroundColor: "rgba(0, 0, 0, 0.2)",
                   },

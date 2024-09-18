@@ -203,6 +203,39 @@ function ModifiedDropdownContent({ options }: { options: ModifiedOption[] }) {
   );
 }
 
+const group = {
+  apps: {
+    label: "Apps",
+    icon: <FolderIcon />,
+    dropdownContent: <AppsDropdownContent apps={apps} />,
+  },
+  people: {
+    label: "People",
+    icon: <PoepleIcon />,
+    dropdownContent: <PeopleDropdownContent people={people} />,
+  },
+  modified: {
+    label: "Modified",
+    icon: <CalendarIcon />,
+    dropdownContent: <ModifiedDropdownContent options={modifiedOptions} />,
+  },
+  more: {
+    label: "More",
+    icon: <MoreIcon />,
+    dropdownContent: (
+      <Box py="3" px="3" display="flex" flexDirection="column" gap="2">
+        <FormLabel display="flex" justifyContent="space-between" m="0">
+          <Text>Show deleted results</Text>
+          <Switch colorScheme="gray" />
+        </FormLabel>
+      </Box>
+    ),
+    triggerProps: {
+      marginLeft: "10",
+    },
+  },
+};
+
 export function App() {
   return (
     <Box
@@ -213,42 +246,7 @@ export function App() {
       justifyContent="flex-start"
       pt="20"
     >
-      <FilterGroup
-        group={{
-          apps: {
-            label: "Apps",
-            icon: <FolderIcon />,
-            dropdownContent: <AppsDropdownContent apps={apps} />,
-          },
-          people: {
-            label: "People",
-            icon: <PoepleIcon />,
-            dropdownContent: <PeopleDropdownContent people={people} />,
-          },
-          modified: {
-            label: "Modified",
-            icon: <CalendarIcon />,
-            dropdownContent: (
-              <ModifiedDropdownContent options={modifiedOptions} />
-            ),
-          },
-          more: {
-            label: "More",
-            icon: <MoreIcon />,
-            dropdownContent: (
-              <Box py="3" px="3" display="flex" flexDirection="column" gap="2">
-                <FormLabel display="flex" justifyContent="space-between" m="0">
-                  <Text>Show deleted results</Text>
-                  <Switch colorScheme="gray" />
-                </FormLabel>
-              </Box>
-            ),
-            triggerProps: {
-              marginLeft: "10",
-            },
-          },
-        }}
-      />
+      <FilterGroup group={group} />
     </Box>
   );
 }
