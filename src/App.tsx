@@ -105,7 +105,7 @@ function AppsDropdownContent({ apps }: { apps: App[] }) {
         <MenuItem key={index}>
           {app.icon}
           <Text fontWeight="500">{app.name}</Text>
-          <Text color="gray.500">{app.count}</Text>
+          <Text color="secondaryText">{app.count}</Text>
         </MenuItem>
       ))}
     </Menu>
@@ -115,11 +115,12 @@ function AppsDropdownContent({ apps }: { apps: App[] }) {
 function PeopleDropdownContent({ people }: { people: Person[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   return (
-    <Box p="4">
+    <Box py="2" px="3">
       <Box
         display="flex"
         alignItems="center"
         borderBottom="1px solid var(--chakra-colors-grayHighlight)"
+        px="3"
       >
         <SearchIcon />
         <Input
@@ -141,7 +142,7 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
           }}
         />
       </Box>
-      <Box as="ul">
+      <Box as="ul" px="3">
         {people.map((person, index) => (
           <Box
             as="li"

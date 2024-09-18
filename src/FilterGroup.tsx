@@ -259,7 +259,7 @@ export const FilterGroup = ({
     >
       <Box display="flex" gap="2">
         <Text fontWeight="bold">Search</Text>
-        <Text color="gray.500">24 results</Text>
+        <Text color="secondaryText">24 results</Text>
       </Box>
       <Box display="flex" flexDirection="row" gap="3">
         {groupKeys.map((key) => {
@@ -329,9 +329,7 @@ export const FilterGroup = ({
                 : 0,
             }}
           >
-            <Box hidden={!state.context.key}>
-              {state.context.key && group[state.context.key].dropdownContent}
-            </Box>
+            {state.context.key && group[state.context.key].dropdownContent}
           </Box>
         </Portal>
       </Box>
