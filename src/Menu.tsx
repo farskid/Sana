@@ -1,4 +1,4 @@
-import { Box, ButtonProps } from "@chakra-ui/react";
+import { Box, ListItemProps } from "@chakra-ui/react";
 import { useEffect, useRef } from "react";
 
 export const Menu = ({ children }: { children: React.ReactNode }) => {
@@ -45,12 +45,12 @@ export const Menu = ({ children }: { children: React.ReactNode }) => {
 
 export const MenuItem = ({
   children,
-  ...buttonProps
-}: { children: React.ReactNode } & ButtonProps) => {
+  ...props
+}: { children: React.ReactNode } & ListItemProps) => {
   return (
     <Box
       role="menuitem"
-      as="button"
+      as="li"
       width="full"
       justifyContent="flex-start"
       data-menuitem
@@ -62,13 +62,13 @@ export const MenuItem = ({
       borderRadius="20px"
       tabIndex={0}
       _focus={{
-        bg: "gray.200",
+        bg: "grayHighlight",
         outline: "none",
       }}
       _active={{
-        bg: "gray.300",
+        bg: "grayHighlightDark",
       }}
-      {...buttonProps}
+      {...props}
     >
       {children}
     </Box>

@@ -1,10 +1,21 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import { Global } from "@emotion/react";
 
+const theme = extendTheme({
+  semanticTokens: {
+    colors: {
+      primaryText: "#000",
+      secondaryText: "#999",
+      grayHighlight: "#f2f2f2",
+      grayHighlightDark: "#e2e2e2",
+    },
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
-  <ChakraProvider>
+  <ChakraProvider theme={theme}>
     <Global
       styles={`
       @font-face {

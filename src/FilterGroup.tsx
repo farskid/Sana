@@ -152,18 +152,17 @@ const filterGroupMachine = setup({
   },
 });
 
+interface GroupItem {
+  label: string;
+  icon: React.ReactElement;
+  dropdownContent: React.ReactNode;
+  triggerProps?: ButtonProps;
+}
+
 export const FilterGroup = ({
   group,
 }: {
-  group: Record<
-    string,
-    {
-      label: string;
-      icon: React.ReactElement;
-      dropdownContent: React.ReactNode;
-      triggerProps?: ButtonProps;
-    }
-  >;
+  group: Record<string, GroupItem>;
 }) => {
   const dropdownContainerRef = useRef<HTMLDivElement>(null!);
 
@@ -270,7 +269,11 @@ export const FilterGroup = ({
             <Button
               {...triggerProps}
               key={key}
-              bg={state.context.key === key ? "#e0e0e0" : "#f2f2f2"}
+              bg={
+                state.context.key === key
+                  ? "grayHighlightDark"
+                  : "grayHighlight"
+              }
               borderRadius="20px"
               px="4"
               py="2"
@@ -309,13 +312,12 @@ export const FilterGroup = ({
             position="absolute"
             bg="white"
             borderRadius="20px"
-            border="1px solid #f2f2f2"
+            border="1px solid var(--chakra-colors-grayHighlight)"
             shadow="lg"
-            overflow="hidden"
             hidden={!state.context.key}
             width="300px"
             maxHeight="400px"
-            // transition="all var(--animation-duration) ease-in-out"
+            transition="all var(--animation-duration) ease-in-out"
             style={{
               top: state.context.triggerPosition
                 ? state.context.triggerPosition.top +
@@ -325,7 +327,6 @@ export const FilterGroup = ({
               left: state.context.triggerPosition
                 ? state.context.triggerPosition.left
                 : 0,
-              transition: "all var(--animation-duration) ease-in-out",
             }}
           >
             <Box hidden={!state.context.key}>

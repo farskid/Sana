@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Box, Divider, Image, Input, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Divider,
+  FormLabel,
+  Image,
+  Input,
+  Switch,
+  Text,
+} from "@chakra-ui/react";
 import {
   AzureIcon,
   CalendarIcon,
@@ -108,7 +116,11 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   return (
     <Box p="4">
-      <Box display="flex" alignItems="center" borderBottom="1px solid #f2f2f2">
+      <Box
+        display="flex"
+        alignItems="center"
+        borderBottom="1px solid var(--chakra-colors-grayHighlight)"
+      >
         <SearchIcon />
         <Input
           type="text"
@@ -121,6 +133,7 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           autoFocus
+          color="secondaryText"
           m="0"
           _focus={{
             outline: "none",
@@ -150,7 +163,7 @@ function PeopleDropdownContent({ people }: { people: Person[] }) {
             <Text whiteSpace="nowrap" fontWeight="500">
               {person.name}
             </Text>
-            <Text color="#999999" isTruncated>
+            <Text color="secondaryText" isTruncated>
               {person.email}
             </Text>
           </Box>
@@ -209,9 +222,16 @@ export function App() {
           more: {
             label: "More",
             icon: <MoreIcon />,
-            dropdownContent: <div>More</div>,
+            dropdownContent: (
+              <Box py="3" px="3" display="flex" flexDirection="column" gap="2">
+                <FormLabel display="flex" justifyContent="space-between" m="0">
+                  <Text>Show deleted results</Text>
+                  <Switch colorScheme="gray" />
+                </FormLabel>
+              </Box>
+            ),
             triggerProps: {
-              marginLeft: "20",
+              marginLeft: "10",
             },
           },
         }}
